@@ -1,16 +1,16 @@
-'use strict';
+"use strict";
 
-var jeton = require('bitcore-lib-cash')
+var jeton = require("bitcore-lib-cash");
 
 // Extensions
-jeton.Transaction = require('./lib/Transaction')
+jeton.Transaction = require("./lib/Transaction");
 
 // Jeton Specific
-jeton.Signature = require('./lib/Signature')
+jeton.Signature = require("./lib/Signature");
 
 // Escrow
-jeton.escrow = {}
-jeton.escrow.InputScript = require('./lib/escrow/InputScript')
-jeton.escrow.OutputScript = require('./lib/escrow/OutputScript')
+jeton.escrow = {};
+jeton.escrow.InputScript = require("./lib/escrow/InputScript");
+jeton.escrow.OutputScript = require("./lib/escrow/OutputScript");
 
-module.exports = jeton
+module.exports = jeton;
