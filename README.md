@@ -10,13 +10,15 @@ Bitcoin Cash has script functionality, such as OP_CHECKDATASIG which is unique a
 
 ```sh
 npm install jeton-lib
+npm install bitbox-sdk
 ```
 
 Adding Jeton Lib to your app's `package.json`:
 
 ```json
 "dependencies": {
-    "jeton-lib": "^1.3.2",
+    "jeton-lib": "^1.3.4",
+    "bitbox-sdk": "^8.11.2"
     ...
 }
 ```
@@ -28,76 +30,132 @@ Complete examples are located in the [/examples](https://github.com/jeton-tech/j
 ### Include jeton-lib wherever you use bitcore-lib-cash
 
 ```javascript
-const jeton = require('jeton-lib')
-const PrivateKey = jeton.PrivateKey
-const Signature = jeton.Signature
-const OutputScript = jeton.escrow.OutputScript
-const Transaction = jeton.Transaction
+const jeton = require("jeton-lib");
+const PrivateKey = jeton.PrivateKey;
+const Signature = jeton.Signature;
+const OutputScript = jeton.escrow.OutputScript;
+const Transaction = jeton.Transaction;
 ```
 
 ### Generate an escrow scriptPubKey
 
 ```javascript
-// Create keypairs for 3 players and a referee
-var priv1 = new PrivateKey("L1wChPjacPamAFVbUsZZi5cEd3kMysZSgfDGprGEj91wTP6sh7KH")
-var pub1 = priv1.toPublicKey()
-var priv2 = new PrivateKey("KzyhHmmxwFbv2Mo8bQsJQwXhrCgAtjsCmuqBBmGZrcjfTn1Xvzw1")
-var pub2 = priv2.toPublicKey()
-var priv3 = new PrivateKey("KzwmMwHjbmRRdtwVUowKpYmpnJmMaVyGTwYLmh2qmiWcqgd7W9fG")
-var pub3 = priv3.toPublicKey()
+// Create keypairs for 2 traders and an oracle
+// Seller keypairs
+var sellerPrivKey = new PrivateKey(
+  "220d0af479da6c89f75846209149679c6f56d7eb7f5179c1ecf4fbdf15572e38"
+);
+var sellerPubKey = sellerPrivKey.toPublicKey();
+var sellerAddress = sellerPubKey.toAddress();
 
-var refPriv = new PrivateKey('L5FDo3MEb2QNs2aQJ5DVGSDE5eBzVsgZny15Ri649RjysWAeLkTs')
-var refpk = refPriv.toPublicKey();
+//Buyer keypairs
+var buyerPrivKey = new PrivateKey(
+  "aa1c53d47dec47bb8f3d2ea64c06da68e5688c864e5c7a94323cc1eb32eb868f"
+);
+var buyerPubKey = buyerPrivKey.toPublicKey();
+var buyerAddress = buyerPubKey.toAddress();
+
+//Oracle keypairs
+var oraclePrivKey = new PrivateKey(
+  "a3eeaaf3e456fb5357d672ff7acd178a57a2b1e9c9c5031a0100594ec2d4f768"
+);
+var oraclePubKey = oraclePrivKey.toPublicKey();
+var oracleAddress = oraclePubKey.toAddress();
 
 // Create the output script
-// parties[].pubKey can be an instance of PublicKey or Address
 var outputScriptData = {
-    refereePubKey: refpk,
-    parties: [
-        {message: 'player1wins', pubKey: pub1.toAddress()},
-        {message: 'player2wins', pubKey: pub2.toAddress()},
-        {message: 'player3wins', pubKey: pub3.toAddress()}
-    ]
-}
+  conditions: [
+    {
+      // Trade is successful
+      message: "1",
+      oraclePubKey: sellerPubKey,
+      spenderAddress: buyerAddress
+    },
+    {
+      // Buyer is awarded key
+      message: "2",
+      oraclePubKey: oraclePubKey,
+      spenderAddress: buyerAddress
+    },
+    {
+      // Trade Cancelled
+      message: "3",
+      oraclePubKey: buyerPubKey,
+      spenderAddress: sellerAddress
+    },
+    {
+      // Seller is awarded key
+      message: "4",
+      oraclePubKey: oraclePubKey,
+      spenderAddress: sellerAddress
+    }
+  ]
+};
 
-outScript = new OutputScript(outputScriptData)
-assert(outScript.toScript().toASM() === 'OP_DUP 706c617965723177696e73 OP_EQUAL OP_IF OP_DROP 706c617965723177696e73 02d180cd5d509cf23fd2139ea53634bac12d29d0a71d22ad97a59a9379faa3250a OP_CHECKDATASIGVERIFY OP_DUP OP_HASH160 44a45625a1fda976376e7d59d27fc621f9c9d382 OP_ELSE OP_DUP 706c617965723277696e73 OP_EQUAL OP_IF OP_DROP 706c617965723277696e73 02d180cd5d509cf23fd2139ea53634bac12d29d0a71d22ad97a59a9379faa3250a OP_CHECKDATASIGVERIFY OP_DUP OP_HASH160 9383fa6588a176c2592cb2f4008d779293246adb OP_ELSE OP_DUP 706c617965723377696e73 OP_EQUAL OP_IF OP_DROP 706c617965723377696e73 02d180cd5d509cf23fd2139ea53634bac12d29d0a71d22ad97a59a9379faa3250a OP_CHECKDATASIGVERIFY OP_DUP OP_HASH160 b011100d12d0537232692b3c113be5a8f5053955 OP_ENDIF OP_ENDIF OP_ENDIF OP_EQUALVERIFY OP_CHECKSIG')
+outScript = new OutputScript(outputScriptData);
+// p2sh escrow address to be funded
+var escrowAddress = outScript.toAddress();
 ```
 
 ### Create a transaction with a P2SH output from escrow script
 
 ```javascript
-var utxo = new Transaction.UnspentOutput({ 
-    txid:
-    'ee874221a431cf09d3373c4b9ffbb1e8fe80526d4304695e2f97541fc084c8f4',
-    vout: 1,
-    satoshis: 10200,
-    scriptPubKey: '76a914b011100d12d0537232692b3c113be5a8f505395588ac' 
-})
+async function fundEscrow() {
+  var result = await bitbox.Address.utxo(sellerAddress.toString());
+  var res = result.utxos[0];
+  // Create example UTXO for seller which will be used to fund the escrow
+  var utxo = new Transaction.UnspentOutput({
+    txid: res.txid,
+    vout: res.vout,
+    satoshis: res.satoshis,
+    scriptPubKey: result.scriptPubKey
+  });
 
-var fundEscrowTx = new Transaction()
-        .from(utxo)          // Feed information about what unspent outputs one can use
-        .toP2SH(outScript, 10000)
-        .sign([priv2])     // Signs all the inputs it can
+  // Create a transaction using the seller's private key to fund the escrow
+  var fundEscrowTx = new Transaction()
+    .from(utxo) // Feed information about what unspent outputs one can use
+    .to(escrowAddress, 10000)
+    .sign(sellerPrivKey);
+  var txid = await bitbox.RawTransactions.sendRawTransaction(
+    fundEscrowTx.toString()
+  );
+}
 ```
 
 ### Spend escrow UTXO
 
 ```javascript
-var escrowUtxo = Transaction.utxoFromTxOutput(fundEscrowTx, 0)
+async function spendEscrow() {
+  var oraclePriv = sellerPrivKey;
+  var spenderPriv = buyerPrivKey;
+  var message = outputScriptData.conditions[0].message;
 
-// Make Transaction from escrow UTXO
-var sighash = (Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID)
-
-var spendEscrowTx = new Transaction()
-.from(escrowUtxo)
-.to(priv1.toAddress(), 9000)
-
-// Sign message with referee private key for player 1 wins
-var refereeSig = Signature.signCDS(outputScriptData.parties[0].message, refPriv)
-
-// Sign CDS input at index 0 as player 1
-spendEscrowTx.signEscrow(0, priv1, outputScriptData.parties[0].message, refereeSig, outScript.toScript(), sighash)
+  //Spend Escrow
+  var result = await bitbox.Address.utxo(escrowAddress.toString());
+  var res = result.utxos[0];
+  var escrowUtxo = new Transaction.UnspentOutput({
+    txid: res.txid,
+    vout: res.vout,
+    satoshis: res.satoshis,
+    scriptPubKey: result.scriptPubKey
+  });
+  // Make Transaction from escrow UTXO
+  var sighash = Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  var spendEscrowTx = new Transaction().from(escrowUtxo).to(buyerAddress, 9350);
+  // Sign message with oracle private key
+  var oracleSig = Signature.signCDS(message, oraclePriv);
+  // Sign transaction with spender private key
+  var hex = spendEscrowTx.signEscrow(
+    0,
+    spenderPriv,
+    message,
+    oracleSig,
+    outScript.toScript(),
+    sighash
+  );
+  var txid = await bitbox.RawTransactions.sendRawTransaction(hex.toString());
+  return console.log(txid);
+}
 ```
 
 ## License
