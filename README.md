@@ -31,6 +31,8 @@ Complete examples are located in the [/examples](https://github.com/jeton-tech/j
 
 ```javascript
 const jeton = require("jeton-lib");
+var BITBOX = require("bitbox-sdk").BITBOX;
+var bitbox = new BITBOX({ restURL: `https://rest.bitcoin.com/v2/` });
 const PrivateKey = jeton.PrivateKey;
 const Signature = jeton.Signature;
 const OutputScript = jeton.escrow.OutputScript;
