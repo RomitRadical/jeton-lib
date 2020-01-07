@@ -1,5 +1,5 @@
 {
-  "name": "jeton-lib",
+  "name": "jeton-lib2",
   "version": "1.3.4",
   "description": "Extension of bitcore-lib-cash for advanced Bitcoin Cash transaction types",
   "main": "index.js",
