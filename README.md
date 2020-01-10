@@ -1,4 +1,4 @@
-# Jeton Lib
+# Jeton Lib 2
 
 **Extension of bitcore-lib-cash for advanced Bitcoin Cash transaction types**
 
@@ -9,7 +9,7 @@ Bitcoin Cash has script functionality, such as OP_CHECKDATASIG which is unique a
 ## Get Started
 
 ```sh
-npm install jeton-lib
+npm install jeton-lib2
 npm install bitbox-sdk
 ```
 
@@ -17,7 +17,7 @@ Adding Jeton Lib to your app's `package.json`:
 
 ```json
 "dependencies": {
-    "jeton-lib": "^1.3.4",
+    "bitcore-lib-cash": "^8.8.4",
     "bitbox-sdk": "^8.11.2"
     ...
 }
