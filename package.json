@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bitcore-lib-cash": "^8.8.4"
+    "bitcore-lib-cash": "^8.8.4",
+    "bitbox-sdk": "^8.11.2"
   }
 }
